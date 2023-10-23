@@ -1,6 +1,9 @@
 # Ignore compiled Python files
 *.pyc
 
+#ignore vscode files and folder
+.vscode
+
 # Ignore the output folder
 output/
 
