@@ -18,11 +18,21 @@ def load_resources():
 if __name__ == "__main__":
     load_resources()
     iface = gr.Interface(
-        # Use lambda to include vintage_polaroid
-        fn=lambda input_img, text, font_size: gr_interface(input_img, text, font_size, vintage_polaroid),
+        fn=lambda img1, txt1, img2, txt2, img3, txt3, img4, txt4, font_size: 
+            gr_interface(
+                [(img1, txt1), (img2, txt2), (img3, txt3), (img4, txt4)], 
+                font_size, 
+                vintage_polaroid
+            ),
         inputs=[
-            gr.Image(label="Input Image"),
-            gr.Textbox(label="Text to Add", value="Meow!"),
+            gr.Image(label="Image 1", optional=True),
+            gr.Textbox(label="Text 1", value="Text 1"),
+            gr.Image(label="Image 2", optional=True),
+            gr.Textbox(label="Text 2", value="Text 2"),
+            gr.Image(label="Image 3", optional=True),
+            gr.Textbox(label="Text 3", value="Text 3"),
+            gr.Image(label="Image 4", optional=True),
+            gr.Textbox(label="Text 4", value="Text 4"),
             gr.Textbox(label="Font Size", value="200")
         ],
         outputs=gr.Image(plot=True),
