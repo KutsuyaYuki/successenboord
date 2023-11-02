@@ -100,25 +100,31 @@ class ImageProcessor:
     def add_text_to_image(img, text, font_size):
         """Add text to an image."""
         try:
-            custom_font = ImageFont.truetype("resources/Font-6.ttf", font_size)
+            try:
+                custom_font = ImageFont.truetype("resources/Font-6.ttf", size=200, encoding="unic")
+            except Exception as font_error:
+                logging.error(f"Failed to load custom font: {font_error}")
+                # Handle the error by using a default font or providing an error message
+                custom_font = ImageFont.load_default()  # Use a default font as a fallback
+
             draw = ImageDraw.Draw(img)
             max_width = img.width - 40
             lines = []
             words = text.split()
             while words:
                 line = ""
-                while words and custom_font.getsize(line + words[0])[0] <= max_width:
+                while words and custom_font.getlength(line + words[0]) <= max_width:
                     line += words.pop(0) + " "
                 lines.append(line)
             y_text = img.height - len(lines) * font_size - 20
             for line in lines:
-                width, height = draw.textsize(line, font=custom_font)
+                width = draw.textlength(line, font=custom_font)
                 position = ((img.width - width) // 2, y_text)
                 draw.text(position, line, "black", font=custom_font)
                 y_text += font_size
             return img
         except Exception as e:
-            logging.error(f"Failed to add text: {e}")
+            logging.error(f"Failed to add text: {e}", exc_info = e)
             return None
 
 
@@ -210,4 +216,4 @@ if __name__ == "__main__":
             def refresh_gallery():
                 gallery.value = ResourceLoader.load_gallery_images()
             refresh_button.click(refresh_gallery)
-    app_blocks.launch()
+    app_blocks.launch(server_name='0.0.0.0',share=True)
