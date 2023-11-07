@@ -192,6 +192,11 @@ class GrInterface:
             return None
             
 
+# Function to ensure necessary folders exist
+def ensure_folders_exist():
+    folders = ['output', 'output/polaroid']
+    for folder in folders:
+        os.makedirs(folder, exist_ok=True)
 
 # Load resources
 vintage_polaroid = ResourceLoader.load_vintage_polaroid()
@@ -201,6 +206,7 @@ global_gallery_images = ResourceLoader.load_gallery_images()
 
 # Main execution
 if __name__ == "__main__":
+    ensure_folders_exist()  # Call the function to check and create folders
     gallery_images = ResourceLoader.load_gallery_images()
     input1 = gr.Image(label="Image 1")
     input2 = gr.Textbox(label="Text 1", value="Tekst 1")
