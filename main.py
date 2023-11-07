@@ -4,6 +4,7 @@ from datetime import datetime
 import numpy as np
 import os
 import logging
+import re
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -127,6 +128,28 @@ class ImageProcessor:
             logging.error(f"Failed to add text: {e}", exc_info = e)
             return None
 
+# Utility function for saving individual polaroids with text and timestamp in the filename
+def save_individual_polaroid(output_image, text):
+    try:
+        # Ensure polaroid directory exists
+        polaroid_dir = "output/polaroid"
+        os.makedirs(polaroid_dir, exist_ok=True)
+
+        # Sanitize the text to remove characters that are invalid in filenames
+        sanitized_text = re.sub(r'[^\w\-_\. ]', '_', text)
+
+        # Append the current date to the sanitized text
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        filename = f"{sanitized_text}_{date_str}.png"
+
+        # Save the polaroid with the new filename
+        polaroid_path = os.path.join(polaroid_dir, filename)
+        output_image.save(polaroid_path, "PNG")
+        logging.info(f"Saved polaroid to {polaroid_path}")
+        return polaroid_path
+    except Exception as e:
+        logging.error(f"Failed to save individual polaroid: {e}")
+        return None
 
 # Class for Gradio interface setup
 class GrInterface:
@@ -153,17 +176,28 @@ class GrInterface:
                 overlayed_img = ImageProcessor.overlay_images(vintage_polaroid, input_img)
                 if overlayed_img:
                     overlayed_img = overlayed_img.resize((GrInterface.TEMPLATE_WIDTH, GrInterface.TEMPLATE_HEIGHT), Image.LANCZOS)
-                    final_img = ImageProcessor.add_text_to_image(overlayed_img, text, int(font_size))
-                    if final_img:
+                final_img = ImageProcessor.add_text_to_image(overlayed_img, text, int(font_size))
+                if final_img:
+                    # Save the individual polaroid
+                    polaroid_path = save_individual_polaroid(final_img, text)
+                    # Resize and paste the saved polaroid image onto the A4 canvas
+                    if polaroid_path:
+                        final_img = Image.open(polaroid_path).resize((GrInterface.TEMPLATE_WIDTH, GrInterface.TEMPLATE_HEIGHT), Image.LANCZOS)
                         canvas.paste(final_img, positions[i])
+
+            # Return the canvas after the loop has finished
             return canvas
         except Exception as e:
             logging.error(f"Failed in GrInterface setup: {e}")
             return None
+            
 
 
 # Load resources
 vintage_polaroid = ResourceLoader.load_vintage_polaroid()
+
+# Define a global variable for the gallery images
+global_gallery_images = ResourceLoader.load_gallery_images()
 
 # Main execution
 if __name__ == "__main__":
@@ -211,9 +245,18 @@ if __name__ == "__main__":
                     outputs=output,
                 )
         with gr.Tab("Image Browser"):
-            gallery = gr.Gallery(label="Image Gallery", value=gallery_images, columns=4, allow_preview=True)
+            # Initialize the gallery with the global variable
+            gallery = gr.Gallery(label="Image Gallery", value=global_gallery_images, columns=4, allow_preview=True)
             refresh_button = gr.Button("Refresh")
+
+            # Define the function that will be called when the refresh button is pressed
             def refresh_gallery():
-                gallery.value = ResourceLoader.load_gallery_images()
-            refresh_button.click(refresh_gallery)
-    app_blocks.launch(server_name='0.0.0.0',share=True)
+                # Load new gallery images
+                updated_gallery_images = ResourceLoader.load_gallery_images()
+                # Return the new list of images to update the gallery
+                return updated_gallery_images
+
+            # Connect the 'refresh_gallery' function to the refresh button click event
+            refresh_button.click(refresh_gallery, inputs=[], outputs=[gallery])
+
+    app_blocks.launch(server_name='0.0.0.0', share=True)
